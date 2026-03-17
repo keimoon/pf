@@ -16,7 +16,8 @@ Unified port-forward manager CLI for Kubernetes services and EC2 instances.
 - `cmd/remove.go` — `pf remove <name>` unregisters a service
 - `cmd/list.go` — `pf list` prints all services in a table
 - `cmd/connect.go` — `pf connect <name>...` runs forwarders concurrently with signal handling
-- `cmd/defaults.go` — `pf defaults` views/sets default SSH command
+- `cmd/defaults.go` — `pf defaults` views/sets default SSH command and user
+- `cmd/version.go` — `pf version` prints version (set via ldflags at build time)
 
 ## Testing
 
@@ -24,7 +25,7 @@ Unified port-forward manager CLI for Kubernetes services and EC2 instances.
 go test ./...
 ```
 
-Tests cover config validation, load/save round-trip, add/remove operations, SSH command fallback, and argument construction for both EC2 and K8s forwarders.
+Tests cover config validation, load/save round-trip, add/remove operations, SSH command/user fallback, and argument construction for both EC2 and K8s forwarders.
 
 ## Build
 
@@ -32,4 +33,10 @@ Tests cover config validation, load/save round-trip, add/remove operations, SSH 
 go build -o pf .
 # or
 go install .
+# with version:
+go build -ldflags "-X github.com/keimoon/pf/cmd.version=v1.0.0" -o pf .
 ```
+
+## CI
+
+`.github/workflows/release.yml` builds and releases `tar.gz` archives for linux/darwin x amd64/arm64 on every tag push (`v*`).

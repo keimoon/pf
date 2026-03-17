@@ -18,8 +18,8 @@ cd pf && go install .
 ## Quick Start
 
 ```bash
-# Set default SSH command (optional)
-pf defaults --ssh-command ssh-nohost
+# Set default SSH command and user (optional)
+pf defaults --ssh-command ssh-nohost --user ec2-user
 
 # Register services
 pf add vm-us --type ec2 --host 198.51.100.1 -l 8428 -r 8428 --desc "VictoriaMetrics US"
@@ -45,6 +45,7 @@ pf connect vm-us grafana
 | `pf list` | List all registered services (alias: `ls`) |
 | `pf connect <name> [name...]` | Port-forward one or more services |
 | `pf defaults [flags]` | View or set default configuration |
+| `pf version` | Print version |
 
 ### `pf add` flags
 
@@ -54,6 +55,7 @@ pf connect vm-us grafana
 | `-l, --local` | **Required.** Local port |
 | `-r, --remote` | **Required.** Remote port |
 | `--host` | EC2: private IP or hostname |
+| `--user` | EC2: SSH user (e.g. `ec2-user`, `ubuntu`) |
 | `--target` | K8s: `svc/<name>`, `deploy/<name>`, or `pod/<name>` |
 | `-n, --namespace` | K8s: namespace (default: `default`) |
 | `--context` | K8s: kubectl context (default: current) |
@@ -77,6 +79,7 @@ pf connect vm-us grafana
 ```yaml
 defaults:
     ssh_command: ssh-nohost
+    ssh_user: ec2-user
 services:
     grafana:
         type: k8s

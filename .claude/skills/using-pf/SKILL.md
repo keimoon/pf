@@ -10,8 +10,8 @@ description: Use when the user wants to port-forward to EC2 instances or Kuberne
 ## Core Workflow
 
 ```bash
-# 1. (One-time) Set default SSH command if not using plain `ssh`
-pf defaults --ssh-command ssh-nohost
+# 1. (One-time) Set default SSH command and user if needed
+pf defaults --ssh-command ssh-nohost --user ec2-user
 
 # 2. Register services
 pf add grafana --type k8s --target svc/grafana -n monitoring -l 3000 -r 80 --desc "Grafana"
@@ -38,6 +38,7 @@ Register a service. The name is how you'll refer to it in `connect`, `list`, and
 | Flag | Description |
 |------|-------------|
 | `--host` | **Required for EC2.** Private IP or hostname |
+| `--user` | SSH user (e.g. `ec2-user`, `ubuntu`) — overrides global default |
 | `--ssh-command` | Override SSH binary for this service only |
 
 **K8s-specific:**
@@ -55,8 +56,8 @@ Register a service. The name is how you'll refer to it in `connect`, `list`, and
 **Examples:**
 
 ```bash
-# EC2 instance with custom SSH
-pf add vm-eu --type ec2 --host 198.51.100.2 -l 8429 -r 8428 --desc "VictoriaMetrics EU" --ssh-command ssh
+# EC2 instance with custom SSH and user
+pf add vm-eu --type ec2 --host 198.51.100.2 --user ubuntu -l 8429 -r 8428 --desc "VictoriaMetrics EU" --ssh-command ssh
 
 # K8s service in a specific context
 pf add staging-db --type k8s --target svc/postgres -n database --context staging -l 5432 -r 5432 --desc "Staging Postgres"
@@ -98,19 +99,25 @@ pf connect vm-us grafana vm-eu   # all three at once
 All names are validated before any forwarding starts, so a typo won't leave you with a partial connection.
 
 Under the hood:
-- **EC2** services run `<ssh-command> -N -L <local>:localhost:<remote> <host>`
+- **EC2** services run `<ssh-command> -N -L <local>:localhost:<remote> [user@]<host>`
 - **K8s** services run `kubectl port-forward [-n <ns>] [--context <ctx>] <target> <local>:<remote>`
 
-### `pf defaults [--ssh-command <cmd>]`
+### `pf defaults [--ssh-command <cmd>] [--user <user>]`
 
-View or set the global default SSH command. Without flags, shows the current value. With `--ssh-command`, updates it.
+View or set global defaults. Without flags, shows current values. With flags, updates them.
 
 ```bash
-pf defaults                          # shows: ssh_command: ssh
-pf defaults --ssh-command ssh-nohost # sets it
+pf defaults                              # show current defaults
+pf defaults --ssh-command ssh-nohost     # set SSH command
+pf defaults --user ec2-user              # set SSH user
+pf defaults --ssh-command ssh --user root # set both at once
 ```
 
-The SSH command resolution order is: per-service `--ssh-command` override > global default > `ssh`.
+Resolution order for both SSH command and user: per-service override > global default > system default (`ssh` / current OS user).
+
+### `pf version`
+
+Print the version of `pf`.
 
 ### Global flag: `--config`
 
@@ -123,6 +130,7 @@ Stored at `~/.config/pf/services.yaml`. Managed entirely through `pf add`, `pf r
 ```yaml
 defaults:
     ssh_command: ssh-nohost
+    ssh_user: ec2-user
 services:
     grafana:
         type: k8s
@@ -162,7 +170,7 @@ The project is a Go CLI built with Cobra:
 
 ```
 main.go           → entry point, calls cmd.Execute()
-cmd/              → one file per subcommand (root, add, remove, list, connect, defaults)
+cmd/              → one file per subcommand (root, add, remove, list, connect, defaults, version)
 config/           → Config types, Load/Save/Add/Remove, validation
 forwarder/        → Forwarder interface, EC2Forwarder (ssh), K8sForwarder (kubectl)
 ```
